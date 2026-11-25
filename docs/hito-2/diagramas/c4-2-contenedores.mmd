@@ -1,0 +1,15 @@
+flowchart TB
+    Usuario(["Usuario / Cliente"]) --> SPA
+    Admin(["Administrador"]) --> SPA
+
+    subgraph MP[Contenedores de Medical Printer]
+        SPA["<b>Single Page Application</b><br/>React + Vite<br/><i>Tienda, login, pedidos y panel de administración</i>"]
+        API["<b>API Backend</b><br/>Java 21 + Spring Boot 3<br/><i>Reglas de negocio, JWT, transacciones y concurrencia</i>"]
+        DB[("<b>Base de Datos Relacional</b><br/>PostgreSQL 16<br/><i>Usuarios, empresas, productos, pedidos, facturas</i>")]
+    end
+
+    Notif[["Servicio de notificaciones<br/>Correo SMTP / WhatsApp"]]
+
+    SPA -->|"REST / JSON sobre HTTPS con JWT"| API
+    API -->|"JPA + JDBC, puerto 5432"| DB
+    API -->|"Envío asíncrono con @Async y reintentos"| Notif

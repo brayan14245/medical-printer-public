@@ -1,0 +1,21 @@
+flowchart TB
+    Cliente["Navegador del usuario<br/>Chrome, Edge o Safari"]
+    DNS["DNS<br/>medicalprinter.co"]
+
+    subgraph VPS[Servidor VPS Linux Ubuntu]
+        subgraph DOCKER[Docker Compose]
+            NGINX["<b>Contenedor proxy</b><br/>nginx con certificado SSL de Certbot<br/>Redirige HTTP a HTTPS"]
+            FRONT["<b>Contenedor frontend</b><br/>nginx sirviendo el build de React<br/>Puerto 80"]
+            BACK["<b>Contenedor backend</b><br/>Java 21 + Spring Boot<br/>Puerto 8080"]
+            DBC[("<b>Contenedor base de datos</b><br/>PostgreSQL 16<br/>Volumen pgdata")]
+        end
+    end
+
+    SMTP[["Servicio de correo o API de WhatsApp"]]
+
+    Cliente --> DNS
+    DNS -->|"HTTPS 443"| NGINX
+    NGINX -->|"ruta / por HTTP 80"| FRONT
+    NGINX -->|"ruta /api/v1 por HTTP 8080"| BACK
+    BACK -->|"JDBC, puerto 5432 en red interna"| DBC
+    BACK -->|"HTTPS o SMTP"| SMTP

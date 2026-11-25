@@ -1,0 +1,57 @@
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant SPA as React SPA
+    participant SEC as SecurityFilterChain
+    participant CTL as PedidoController
+    participant SVC as PedidoService
+    participant PRD as ProductoRepository
+    participant PED as PedidoRepository
+    participant DB as PostgreSQL
+    participant EVT as NotificacionListener
+
+    U->>SPA: Presiona Confirmar pedido
+    SPA->>SPA: isSubmitting = true y genera Idempotency-Key
+    SPA->>SEC: POST /api/v1/pedidos con JWT
+    alt Token ausente o expirado
+        SEC-->>SPA: 401 NO_AUTENTICADO
+        SPA-->>U: Redirige al login y conserva el carrito
+    else Sesión válida
+        SEC->>CTL: Solicitud autenticada
+        alt Cuerpo inválido, por ejemplo cantidad menor a 1
+            CTL-->>SPA: 400 DATOS_INVALIDOS
+            SPA-->>U: Marca el campo cantidad
+        else Cuerpo válido
+            CTL->>SVC: crear(usuarioId, clave, request)
+            SVC->>PED: findByIdempotencyKey(clave)
+            PED->>DB: SELECT en pedidos
+            DB-->>PED: Resultado
+            opt La clave ya fue usada
+                SVC-->>CTL: Devuelve el pedido existente sin duplicar
+            end
+            alt Falta el contacto o la empresa, RN-04
+                SVC-->>CTL: BusinessException 422
+                CTL-->>SPA: 422 DESTINATARIO_REQUERIDO
+                SPA-->>U: Resalta los campos obligatorios
+            else Destinatario completo
+                SVC->>PRD: bloquearPorIds(ids)
+                PRD->>DB: SELECT con FOR UPDATE ordenado por id
+                DB-->>PRD: Productos bloqueados
+                alt Producto no disponible o cantidad mayor al stock, RN-03
+                    SVC-->>CTL: BusinessException 409
+                    CTL-->>SPA: 409 STOCK_INSUFICIENTE
+                    SPA-->>U: Modal con el máximo disponible
+                else Stock suficiente
+                    SVC->>SVC: descontarStock y crea ítems con precio congelado
+                    SVC->>PED: saveAndFlush(pedido)
+                    PED->>DB: INSERT pedido e ítems y UPDATE stock
+                    DB-->>PED: Confirmación
+                    SVC-)EVT: publishEvent(PedidoCreadoEvent)
+                    SVC-->>CTL: PedidoDto
+                    CTL-->>SPA: 201 Created
+                    SPA-->>U: Pedido creado en estado Pendiente
+                    Note over EVT: Tras el commit envía correo o WhatsApp con 3 reintentos
+                end
+            end
+        end
+    end

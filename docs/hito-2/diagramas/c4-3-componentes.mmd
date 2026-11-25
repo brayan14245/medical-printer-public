@@ -1,0 +1,41 @@
+flowchart LR
+    SPA["SPA React"] -->|"HTTPS / JSON"| Sec["<b>SecurityFilterChain</b><br/>JwtAuthFilter, roles y CORS (config)"]
+
+    Sec --> AuthCtrl["<b>AuthController</b><br/>/auth"]
+    Sec --> ProdCtrl["<b>ProductoController</b><br/>/productos y /admin/productos"]
+    Sec --> EmpCtrl["<b>EmpresaController</b><br/>/empresas"]
+    Sec --> PedCtrl["<b>PedidoController</b><br/>/pedidos"]
+    Sec --> AdmCtrl["<b>AdminController</b><br/>/admin"]
+
+    AuthCtrl --> AuthSrv["<b>AuthService</b><br/>RN-01, RN-02, RNF-03"]
+    ProdCtrl --> ProdSrv["<b>ProductoService</b><br/>Catálogo e inventario"]
+    EmpCtrl --> EmpSrv["<b>EmpresaService</b><br/>Empresas por NIT"]
+    PedCtrl --> PedSrv["<b>PedidoService</b><br/>RN-03 a RN-05, atomicidad e idempotencia"]
+    AdmCtrl --> EstSrv["<b>PedidoEstadoService</b><br/>RN-07 y RN-08"]
+    AdmCtrl --> FacSrv["<b>FacturaService</b><br/>RN-09 y RN-10"]
+    AdmCtrl --> PedSrv
+
+    AuthSrv --> UsrRepo["<b>UsuarioRepository</b>"]
+    AuthSrv --> EmpRepo["<b>EmpresaRepository</b>"]
+    EmpSrv --> EmpRepo
+    PedSrv --> EmpRepo
+    PedSrv --> ProdRepo["<b>ProductoRepository</b><br/>PESSIMISTIC_WRITE"]
+    ProdSrv --> ProdRepo
+    PedSrv --> PedRepo["<b>PedidoRepository</b><br/>@Version"]
+    EstSrv --> PedRepo
+    EstSrv --> ProdRepo
+    EstSrv --> HisRepo["<b>HistorialEstadoRepository</b>"]
+    FacSrv --> PedRepo
+    FacSrv --> FacRepo["<b>FacturaRepository</b><br/>UNIQUE pedido_id"]
+    FacSrv --> ConRepo["<b>ConsecutivoRepository</b><br/>PESSIMISTIC_WRITE"]
+
+    PedSrv -.->|"publica PedidoCreadoEvent"| NotifL["<b>NotificacionListener</b><br/>@Async + @Retryable"]
+    NotifL -.->|"SMTP / WhatsApp"| Ext[["Servicio de notificaciones"]]
+
+    UsrRepo --> DB[("PostgreSQL")]
+    EmpRepo --> DB
+    ProdRepo --> DB
+    PedRepo --> DB
+    HisRepo --> DB
+    FacRepo --> DB
+    ConRepo --> DB

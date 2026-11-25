@@ -1,0 +1,116 @@
+classDiagram
+    direction LR
+    class Rol {
+        <<enumeration>>
+        ADMIN
+        USUARIO
+    }
+    class EstadoProducto {
+        <<enumeration>>
+        DISPONIBLE
+        NO_DISPONIBLE
+    }
+    class TipoDestinatario {
+        <<enumeration>>
+        PERSONA
+        EMPRESA
+    }
+    class EstadoPedido {
+        <<enumeration>>
+        PENDIENTE
+        CONFIRMADO
+        ENVIADO
+        ENTREGADO
+        CANCELADO
+        +boolean puedePasarA(EstadoPedido destino)
+        +boolean esFinal()
+    }
+    class Empresa {
+        +Long id
+        +String nombre
+        +String nit
+        +String telefono
+        +String correo
+        +String direccion
+        +String ciudad
+        +boolean activa
+        +LocalDateTime createdAt
+    }
+    class Usuario {
+        +Long id
+        +String nombre
+        +String correo
+        +String passwordHash
+        +String telefono
+        +Rol rol
+        +boolean activo
+        +int intentosFallidos
+        +LocalDateTime bloqueadoHasta
+        +boolean estaBloqueado(LocalDateTime ahora)
+    }
+    class Categoria {
+        +Long id
+        +String nombre
+    }
+    class Producto {
+        +Long id
+        +String nombre
+        +String descripcion
+        +String imagenUrl
+        +BigDecimal precio
+        +int stock
+        +EstadoProducto estado
+        +boolean estaDisponible()
+        +void descontarStock(int cantidad)
+        +void reintegrarStock(int cantidad)
+    }
+    class Pedido {
+        +Long id
+        +TipoDestinatario destinatarioTipo
+        +String contacto
+        +EstadoPedido estado
+        +BigDecimal total
+        +String idempotencyKey
+        +Long version
+        +LocalDateTime createdAt
+        +LocalDateTime updatedAt
+    }
+    class PedidoItem {
+        +Long id
+        +int cantidad
+        +BigDecimal precioUnitario
+    }
+    class HistorialEstado {
+        +Long id
+        +EstadoPedido estadoAnterior
+        +EstadoPedido estadoNuevo
+        +LocalDateTime fecha
+    }
+    class Factura {
+        +Long id
+        +Long numero
+        +BigDecimal subtotal
+        +BigDecimal impuestos
+        +BigDecimal total
+        +LocalDateTime fechaEmision
+    }
+    class Consecutivo {
+        +String serie
+        +Long ultimoNumero
+    }
+
+    Empresa "1" --> "0..*" Usuario : agrupa
+    Empresa "1" --> "0..*" Pedido : destinataria de
+    Usuario "1" --> "0..*" Pedido : realiza
+    Categoria "1" --> "0..*" Producto : clasifica
+    Pedido "1" *-- "1..*" PedidoItem : contiene
+    Producto "1" --> "0..*" PedidoItem : se vende en
+    Pedido "1" --> "0..*" HistorialEstado : registra
+    Usuario "1" --> "0..*" HistorialEstado : cambia
+    Pedido "1" --> "0..1" Factura : genera
+    Usuario "1" --> "0..*" Factura : emite
+    Usuario ..> Rol
+    Producto ..> EstadoProducto
+    Pedido ..> TipoDestinatario
+    Pedido ..> EstadoPedido
+    HistorialEstado ..> EstadoPedido

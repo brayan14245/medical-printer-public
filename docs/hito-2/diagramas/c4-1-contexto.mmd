@@ -1,0 +1,13 @@
+flowchart TB
+    Usuario(["Usuario / Cliente<br/>Persona o empresa que compra"]):::person
+    Admin(["Administrador<br/>Gestiona productos, pedidos y facturas"]):::person
+    Sistema["<b>Medical Printer</b><br/>Plataforma web de pedidos de equipos médicos"]:::system
+    Notif[["Servicio de notificaciones<br/>Correo SMTP / WhatsApp"]]:::ext
+
+    Usuario -->|"Consulta el catálogo, se registra y hace pedidos"| Sistema
+    Admin -->|"Administra productos, estados de pedidos y facturas"| Sistema
+    Sistema -->|"Envía confirmaciones de pedido de forma asíncrona"| Notif
+
+    classDef person fill:#0a2a5e,color:#fff,stroke:#0a2a5e
+    classDef system fill:#1f6fe5,color:#fff,stroke:#0a2a5e
+    classDef ext fill:#718096,color:#fff,stroke:#4a5568
