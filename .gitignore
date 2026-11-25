@@ -1,0 +1,23 @@
+# Local environment variables and credentials
+.env
+.env.*
+!.env.example
+application-local.properties
+application-prod.properties
+*.pem
+*.key
+*.p12
+*.jks
+
+# Build output and installed dependencies
+/target/
+/frontend/node_modules/
+/frontend/dist/
+/uploads/
+
+# Local editor and operating system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
